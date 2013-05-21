@@ -1,4 +1,4 @@
-# CS 6241 - Compiler Design
+# CS 6241 - Compiler Design - Spring 2011
 
 ## Project 0
 
