@@ -1,0 +1,57 @@
+#
+# Run clang on hello.c and then run the projectzero analysis on the resulting bc
+#
+chris@kingsley:~/cs6241/tmp$ ../llvm-gcc/bin/llvm-gcc -o hello.bc -emit-llvm -c ../benchmarks/helloworld-c/hello.c && ./../llvm/Release/bin/opt -load ../llvm/Release/lib/LLVMProjectZero.so -projectzero -analyze < hello.bc
+
+#
+# Compile llvm
+#
+
+chris@kingsley:~/cs6241/git/llvm$ ./configure 
+chris@kingsley:~/cs6241/git/llvm$ make CXX="g++ -w" -j2
+
+#
+# Compile hello world
+#
+
+chris@kingsley:~/cs6241/tmp$ llvm-gcc -c -o hello.bc -emit-llvm ../git/benchmarks/helloworld/hello.cpp
+
+#
+# Run hello world by converting to binary
+#
+
+chris@kingsley:~/cs6241/tmp$ llvm-ld -o hello hello.bc
+chris@kingsley:~/cs6241/tmp$ ./hello
+Hello World!
+
+#
+# Run hello world with lli
+#
+
+chris@kingsley:~/cs6241/tmp$ lli hello.bc
+Hello World!
+
+#
+# Run the "dead code elimination" optimization
+#
+
+chris@kingsley:~/cs6241/tmp$ opt -stats -dce < hello.bc > hello2.bc && ls -la | grep hello
+===-------------------------------------------------------------------------===
+                          ... Statistics Collected ...
+===-------------------------------------------------------------------------===
+
+3 dce - Number of insts removed
+
+-rw-r--r--  1 chris chris 3236 2011-02-12 20:50 hello2.bc
+-rw-r--r--  1 chris chris 3292 2011-02-12 20:49 hello.bc
+
+#
+# Run the "hello" optimization on hello world
+#
+
+chris@kingsley:~/cs6241/tmp$ opt -load ../src/Release/lib/LLVMHello.so -hello < hello.bc > /dev/null
+Hello: main
+Hello: _GLOBAL__I_main
+Hello: _Z41__static_initialization_and_destruction_0ii
+Hello: __tcf_0
+

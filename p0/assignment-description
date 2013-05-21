@@ -1,0 +1,42 @@
+CS 6241 : Compiler Optimizations
+Project : Phase 0
+Points : 100
+Due : February 18th 2011
+
+Important policies:
+
+1. Georgia Tech honor code will be strictly enforced for this and other projects. Copying of code or solutions from any source is an act of plagiarism.
+2. Further instructions on the project will be posted on T-square
+3. Please consult the course TA for questions and clarifications about LLVM infrastructure. 
+
+Description:
+
+In this project, our goal is to familiarize with LLVM. First download version 2.8 from llvm.org and install it. Go over the necessary documentation and develop the necessary instrumentation pass for getting the following information; you can use test cases to debug your implementation. Final benchmark to be used to generate the results will be made available soon.  Using the compiler, you will measure and report the following information (please note that all of the following are found at compile time by analyzing the IR):
+
+(1) Total number of functions in the application and total number of edges of the static call graph (do not include return edges). For the following items the average, minimum and maximum are taken across all functions for a given application:
+(2) Average, maximum and minimum  number of basic blocks inside functions. 
+(3) Average, maximum and minimum  number of CFG edges inside functions.
+(4) Average, maximum and minimum  number of single entry loops inside functions (count each loop based on a back edge). 
+(5) Average, maximum and minimum  number of loop basic blocks inside functions.
+(6) Average number of dominators for a basic block across all functions.
+(7) Average number of basic blocks dominated by a given basic block, across all functions. 
+
+Finally turn off the optimizations implemented in the LLVM infrastructure and implement the following:
+
+Unreachable code detection and elimination:
+
+Unreachable code (in the control flow sense) is defined as the basic blocks that are unreachable from the root basic block in a function. After CFG is generated, this is the first optimization done to clean up the CFG – identify appropriate place in LLVM to implement this optimization and implement your own version of unreachable code detection and elimination. 
+
+Deliverables:
+
+You will deliver the following:
+
+1. Modified LLVM – give access to your implementation to the TA along with a small documentation of where to find your passes and code changes.
+2. A report documenting the above results on the benchmarks and your comments on the observations. (maximum 2-3 pages).
+
+-------------------------------------------------
+
+Announcements:
+
+In the assignment, you are required to turn off the optimizations implemented in the LLVM. To make sure that, I recommend you to specify the option '-disable-opt" when you link multiple LLVM byte codes using 'llvm-ld'. The thing is that 'llvm-ld' is supposed to perform some postpass (link-time) optimizations such as function inlining. This is important in that one part of the assignment is to count the number of functions. Another way to work around is to use 'llvm-link' instead of 'llvm-ld'. For more detail, please refer to the related document in the LLVM website. Changhee
+

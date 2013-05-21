@@ -1,0 +1,83 @@
+#!/usr/bin/perl
+
+use File::Basename;
+
+$bench = $ARGV[0];
+$benchname = basename($bench);
+
+$llvm = "../../../llvm";
+$regular_lli = "../../../../clang/bin/lli";
+
+$opt_so = "$llvm/Release/lib/libLLVM_abc.so";
+$tmp = "/tmp/cs6241/$benchname/".timestamp();
+$abcd_lli = "$llvm/Release/bin/lli";
+
+if (!-e $opt_so) { die "Does not exist: $opt_so"; }
+
+# make the the tmp directory
+print_system("mkdir -p $tmp");
+
+# look for the initial benchmark
+if (-e "$bench.c") { clang($bench, "$tmp/unmodified"); }
+elsif (-e "$bench.bc") { print_system("cp $bench.bc $tmp/unmodified.bc"); }
+else { die("neither $bench.c nor $bench.bc exist"); }
+ld("unmodified");
+
+# run various permutations of the optimizations
+opt("-abc-insert", "unmodified", "checks");
+opt("-gvn", "unmodified", "pre");
+opt("-gvn", "checks", "checks.pre");
+opt("-abc-remove", "checks", "checks.remove");
+opt("-abc-remove", "checks.pre", "checks.pre.remove");
+
+print_header("Statistics");
+
+# run the permutations and print results
+benchmark("unmodified");
+benchmark("unmodified");
+benchmark("pre");
+benchmark("checks");
+benchmark("checks.remove");
+benchmark("checks.pre");
+benchmark("checks.pre.remove");
+print "\n";
+dyn_abcd("checks");
+print "\n";
+
+sub clang { my($in, $out) = @_;
+  print_system("clang -c -o $out.bc -emit-llvm $in.c");
+  #print_system("clang -S -o $out.o -emit-llvm $in.c");
+}
+
+sub ld { $_="$tmp/".$_[0]; print_system("llvm-ld -o $_.out $_.bc"); }
+
+sub opt { $flags=$_[0]; $in="$tmp/".$_[1]; $out="$tmp/".$_[2];
+  print_header($_[2]);
+  print_system("opt -load $opt_so $flags $in.bc > $out.bc");
+  #print_system("opt -S -load $opt_so $flags $in.o > $out.o");
+  ld($_[2]);
+}
+
+sub dyn_abcd {
+  $name=$_[0];
+  $path="$tmp/$name";
+  print("lli [$name]: ");
+  print(timer("$abcd_lli $path.bc > /dev/null")." without abcd; ");
+  print(timer("$abcd_lli --abcd $path.bc > /dev/null")." with abcd\n");
+}
+
+sub benchmark {
+  printf("  %-*s", 17, $_[0]);
+  $path = "$tmp/".$_[0];
+  print "\tbytecode size: ".sizer("$path.bc");
+  print "\texecutable size: ".sizer("$path.out");
+  print "\ttime: ".timer("$regular_lli $path.bc > /dev/null")."\n";
+}
+
+sub timer { backtick("/usr/bin/time -f %E 2>&1 ".$_[0]); }
+sub sizer { -s $_[0]; }
+sub timestamp { backtick("date +%Y-%m-%d-%H-%M-%S-%N"); }
+sub backtick { local $/=""; $_=$_[0]; $_=`$_`; chomp; $_; }
+sub print_system { my($cmd)=$_[0]; print("$cmd\n"); `$cmd`; }
+sub print_header { printf "\n========================    ".$_[0]."    ".("=" x (40 - length($_[0])))."\n\n"; }
+

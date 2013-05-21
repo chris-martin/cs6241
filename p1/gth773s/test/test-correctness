@@ -1,0 +1,52 @@
+#!/usr/bin/perl
+
+use File::Basename;
+
+$bench = $ARGV[0];
+$benchname = basename($bench);
+
+$llvm = "../../../llvm";
+$regular_lli = "../../../../clang/bin/lli";
+
+$opt_so = "$llvm/Release/lib/libLLVM_abc.so";
+$tmp = "/tmp/cs6241/$benchname/".timestamp();
+
+if (!-e $opt_so) { die "Does not exist: $opt_so"; }
+
+# make the the tmp directory
+print_system("mkdir -p $tmp");
+
+# look for the initial benchmark
+if (-e "$bench.c") { clang($bench, "$tmp/unmodified"); }
+elsif (-e "$bench.bc") { print_system("cp $bench.bc $tmp/unmodified.bc"); }
+else { die("neither $bench.c nor $bench.bc exist"); }
+
+opt("-abc-insert", "unmodified", "checks");
+opt("-abc-remove", "checks", "checks.remove");
+
+print_header("Running unmodified");
+print(timer("$regular_lli $tmp/unmodified.bc > /dev/null")."\n");
+
+print_header("Running with checks");
+print(timer("$regular_lli $tmp/checks.bc > /dev/null")."\n");
+
+print_header("Running with checks removed");
+print(timer("$regular_lli $tmp/checks.remove.bc > /dev/null")."\n");
+
+print("\n");
+
+sub clang { my($in, $out) = @_;
+  print_system("clang -c -o $out.bc -emit-llvm $in.c");
+}
+
+sub opt { $flags=$_[0]; $in="$tmp/".$_[1]; $out="$tmp/".$_[2];
+  print_header($_[2]);
+  print_system("opt -load $opt_so $flags $in.bc > $out.bc");
+}
+
+sub timer { backtick("/usr/bin/time -f %E 2>&1 ".$_[0]); }
+sub timestamp { backtick("date +%Y-%m-%d-%H-%M-%S-%N"); }
+sub backtick { local $/=""; $_=$_[0]; $_=`$_`; chomp; $_; }
+sub print_system { my($cmd)=$_[0]; print("$cmd\n"); `$cmd`; }
+sub print_header { printf "\n========================    ".$_[0]."    ".("=" x (40 - length($_[0])))."\n\n"; }
+

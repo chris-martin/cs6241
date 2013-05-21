@@ -1,0 +1,42 @@
+; ModuleID = 'chris3.c'
+target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64"
+target triple = "x86_64-unknown-linux-gnu"
+
+define i32 @main() nounwind {
+  ret i32 0
+}
+
+define i32 @foo(i32 %a, i32 %b) nounwind {
+  %1 = alloca i32, align 4
+  %2 = alloca i32, align 4
+  %3 = alloca i32, align 4
+  %4 = alloca i8*
+  %5 = alloca i32
+  store i32 %a, i32* %2, align 4
+  store i32 %b, i32* %3, align 4
+  %6 = call i8* @llvm.stacksave()
+  store i8* %6, i8** %4
+  %7 = load i32* %3, align 4
+  %8 = zext i32 %7 to i64
+  %9 = mul i64 4, %8
+  %10 = load i32* %2, align 4
+  %11 = zext i32 %10 to i64
+  %12 = mul i64 %9, %11
+  %13 = alloca i8, i64 %12, align 16
+  %14 = bitcast i8* %13 to i32*
+  %15 = mul i64 7, %9
+  %16 = udiv i64 %15, 4
+  %17 = getelementptr inbounds i32* %14, i64 %16
+  %18 = getelementptr inbounds i32* %17, i64 9
+  %19 = load i32* %18
+  store i32 %19, i32* %1
+  store i32 1, i32* %5
+  %20 = load i8** %4
+  call void @llvm.stackrestore(i8* %20)
+  %21 = load i32* %1
+  ret i32 %21
+}
+
+declare i8* @llvm.stacksave() nounwind
+
+declare void @llvm.stackrestore(i8*) nounwind
